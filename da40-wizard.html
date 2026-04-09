@@ -32,8 +32,40 @@
   --border: #1c1c1c;
   --text: #e8d5a0;
   --muted: #5a5040;
+  --heading: #ffffff;
   --font: 'Oswald', sans-serif;
   --mono: 'Share Tech Mono', monospace;
+}
+
+[data-theme="light"] {
+  --bg: #f5f0e8;
+  --amber: #c47f00;
+  --amber-dim: #a06800;
+  --amber-glow: rgba(196,127,0,0.12);
+  --amber-faint: rgba(196,127,0,0.06);
+  --green: #1a8840;
+  --green-glow: rgba(26,136,64,0.12);
+  --red: #cc2200;
+  --red-glow: rgba(204,34,0,0.12);
+  --panel: #ffffff;
+  --border: #d8ceb8;
+  --text: #2a1f00;
+  --muted: #8a7a5a;
+  --heading: #0a0800;
+}
+
+.theme-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -152,7 +184,7 @@ html, body {
   font-size: 28px;
   font-weight: 600;
   letter-spacing: 0.06em;
-  color: #fff;
+  color: var(--heading);
   line-height: 1.15;
   text-transform: uppercase;
 }
@@ -210,7 +242,7 @@ html, body {
   font-size: 32px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: #fff;
+  color: var(--heading);
   line-height: 1;
 }
 
@@ -493,7 +525,7 @@ html, body {
 .rcard-val {
   font-family: var(--mono);
   font-size: 28px;
-  color: #fff;
+  color: var(--heading);
   line-height: 1;
 }
 
@@ -519,7 +551,7 @@ html, body {
 .range-val {
   font-size: 22px;
   font-weight: 600;
-  color: #fff;
+  color: var(--heading);
   letter-spacing: 0.04em;
 }
 
@@ -604,7 +636,7 @@ html, body {
   <div class="topbar">
     <div class="topbar-left">DA40 · <span>IO-360</span></div>
     <div class="topbar-title">Power Settings</div>
-    <div style="width:48px"></div>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" aria-label="Toggle theme">☀️</button>
   </div>
   <div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div>
   <div class="step-body">
@@ -1001,6 +1033,18 @@ function restart() {
   s1.classList.add('active');
   currentScreen='s1';
 }
+
+// ── THEME ─────────────────────────────────────────────────────────────────
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = t === 'light' ? '🌙' : '☀️';
+  try { localStorage.setItem('da40-theme', t); } catch(e){}
+}
+function toggleTheme() {
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+}
+try { applyTheme(localStorage.getItem('da40-theme') || 'dark'); } catch(e) { applyTheme('dark'); }
 </script>
 </body>
 </html>

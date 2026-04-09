@@ -25,9 +25,39 @@
     --dim: #3a4055;
     --text: #c8d0e0;
     --muted: #5a6278;
+    --heading: #ffffff;
     --font-mono: 'Share Tech Mono', monospace;
     --font-ui: 'Barlow Condensed', sans-serif;
   }
+
+  [data-theme="light"] {
+    --bg: #f0f2f5;
+    --panel: #ffffff;
+    --border: #d0d5e0;
+    --accent: #0088bb;
+    --accent2: #d94f1a;
+    --green: #1a9944;
+    --dim: #b0b8cc;
+    --text: #1a2035;
+    --muted: #7a8499;
+    --heading: #0a0c0f;
+  }
+
+  .theme-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 16px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .theme-btn:active { border-color: var(--accent); color: var(--accent); }
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -65,7 +95,7 @@
     font-size: 20px;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: #fff;
+    color: var(--heading);
     text-transform: uppercase;
   }
 
@@ -258,7 +288,7 @@
   .result-value {
     font-family: var(--font-mono);
     font-size: 36px;
-    color: #fff;
+    color: var(--heading);
     line-height: 1;
     letter-spacing: 0.04em;
   }
@@ -367,7 +397,7 @@
 <header>
   <div class="logo">DA 40 · <span>AFM 5-6/5-7</span></div>
   <div class="title">Power</div>
-  <div class="badge">IO-360</div>
+  <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" aria-label="Toggle theme">☀️</button>
 </header>
 
 <main>
@@ -682,6 +712,17 @@ function estimateTAS(power, alt) {
 updateRPMOptions();
 updateTempDisplay();
 render();
+
+// ── THEME ─────────────────────────────────────────────────────────────────
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t === 'light' ? '🌙' : '☀️';
+  try { localStorage.setItem('da40-theme', t); } catch(e){}
+}
+function toggleTheme() {
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+}
+try { applyTheme(localStorage.getItem('da40-theme') || 'dark'); } catch(e) { applyTheme('dark'); }
 </script>
 </body>
 </html>

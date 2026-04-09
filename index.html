@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>DA40 Power</title>
+<link rel="manifest" href="manifest.json">
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:#080808;color:#e8d5a0;font-family:'Oswald',sans-serif;min-height:100vh;
+  padding:env(safe-area-inset-top,20px) 18px env(safe-area-inset-bottom,20px);}
+header{padding:24px 0 8px;border-bottom:1px solid #1c1c1c;margin-bottom:32px;}
+.logo{font-family:'Share Tech Mono',monospace;font-size:11px;color:#5a5040;letter-spacing:0.15em;}
+.logo span{color:#ffb400;}
+h1{font-size:32px;font-weight:700;letter-spacing:0.08em;color:#fff;margin-top:6px;text-transform:uppercase;}
+.sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:#5a5040;margin-top:4px;letter-spacing:0.1em;}
+.card{display:block;background:#0f0f0f;border:1.5px solid #1c1c1c;padding:24px 20px;
+  margin-bottom:14px;text-decoration:none;color:inherit;position:relative;overflow:hidden;transition:border-color 0.15s;}
+.card:active{border-color:#ffb400;background:rgba(255,180,0,0.04);}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#ffb400;}
+.card-title{font-size:24px;font-weight:700;letter-spacing:0.06em;color:#fff;text-transform:uppercase;}
+.card-desc{font-family:'Share Tech Mono',monospace;font-size:11px;color:#5a5040;margin-top:8px;
+  letter-spacing:0.06em;line-height:1.6;}
+.card-arrow{position:absolute;right:20px;top:50%;transform:translateY(-50%);
+  font-size:20px;color:#7a5600;}
+.badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:9px;
+  color:#ffb400;border:1px solid rgba(255,180,0,0.3);padding:2px 6px;
+  letter-spacing:0.1em;margin-top:8px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">DA40 · <span>IO-360</span> · AFM 5-6/5-7</div>
+  <h1>Power Settings</h1>
+  <div class="sub">SELECT A MODE</div>
+</header>
+
+<a class="card" href="da40-wizard.html">
+  <div class="card-title">Wizard</div>
+  <div class="card-desc">STEP-BY-STEP · LARGE BUTTONS<br>BEST FOR USE IN FLIGHT</div>
+  <div class="badge">RECOMMENDED</div>
+  <div class="card-arrow">→</div>
+</a>
+
+<a class="card" href="da40-power.html">
+  <div class="card-title">Full Panel</div>
+  <div class="card-desc">ALL INPUTS ON ONE SCREEN<br>BEST FOR PREFLIGHT PLANNING</div>
+  <div class="card-arrow">→</div>
+</a>
+
+</body>
+</html>

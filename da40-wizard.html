@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>DA40 Power</title>
+<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+/* Offline font fallbacks */
+@font-face { font-family: 'Oswald'; src: local('Oswald'), local('Arial Narrow'), local('Impact'); font-weight: 400 700; }
+@font-face { font-family: 'Share Tech Mono'; src: local('Courier New'), local('Menlo'), local('monospace'); }
+
+:root {
+  --bg: #080808;
+  --amber: #ffb400;
+  --amber-dim: #7a5600;
+  --amber-glow: rgba(255,180,0,0.15);
+  --amber-faint: rgba(255,180,0,0.06);
+  --green: #00e676;
+  --green-glow: rgba(0,230,118,0.15);
+  --red: #ff4444;
+  --red-glow: rgba(255,68,68,0.15);
+  --panel: #0f0f0f;
+  --border: #1c1c1c;
+  --text: #e8d5a0;
+  --muted: #5a5040;
+  --font: 'Oswald', sans-serif;
+  --mono: 'Share Tech Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* ── SCREENS ── */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(40px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(0);
+}
+
+.screen.exit {
+  opacity: 0;
+  transform: translateX(-40px);
+  pointer-events: none;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.topbar-left {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+}
+
+.topbar-left span { color: var(--amber); }
+
+.topbar-title {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+
+.back-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--amber-dim);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  padding: 6px 0;
+  text-transform: uppercase;
+}
+
+.back-btn:active { color: var(--amber); }
+
+/* ── PROGRESS ── */
+.progress-bar {
+  height: 2px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--amber);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px var(--amber);
+}
+
+/* ── STEP CONTENT ── */
+.step-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 18px;
+  overflow: hidden;
+}
+
+.step-q {
+  padding: 22px 0 18px;
+  flex-shrink: 0;
+}
+
+.step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+
+.step-question {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #fff;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.step-question em {
+  font-style: normal;
+  color: var(--amber);
+}
+
+/* ── OPTION CARDS ── */
+.options {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.opt {
+  flex-shrink: 0;
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+  padding: 0 20px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+
+.opt::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.12s;
+}
+
+.opt:active, .opt.selected {
+  border-color: var(--amber);
+  background: var(--amber-faint);
+}
+
+.opt:active::before, .opt.selected::before {
+  background: var(--amber);
+}
+
+.opt-main {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  line-height: 1;
+}
+
+.opt-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+.opt-right {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--amber-dim);
+  letter-spacing: 0.06em;
+  text-align: right;
+}
+
+/* Altitude options - larger number display */
+.alt-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  justify-content: center;
+  padding-bottom: 20px;
+}
+
+.alt-display-big {
+  text-align: center;
+  padding: 28px 0;
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+}
+
+.alt-num {
+  font-family: var(--mono);
+  font-size: 58px;
+  color: var(--amber);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(255,180,0,0.4);
+}
+
+.alt-unit {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 6px;
+  letter-spacing: 0.12em;
+}
+
+.alt-isa {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+  letter-spacing: 0.1em;
+}
+
+.alt-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.alt-btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alt-btn {
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.1s, background 0.1s;
+  text-transform: uppercase;
+}
+
+.alt-btn:active {
+  border-color: var(--amber);
+  background: var(--amber-faint);
+  color: var(--amber);
+}
+
+.alt-btn.confirm {
+  grid-column: span 2;
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #000;
+  font-weight: 700;
+  font-size: 18px;
+  height: 64px;
+  letter-spacing: 0.15em;
+}
+
+.alt-btn.confirm:active { opacity: 0.85; }
+
+/* Temp stepper */
+.temp-stepper-big {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  padding-bottom: 20px;
+}
+
+.temp-display-big {
+  text-align: center;
+  padding: 24px 0;
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+}
+
+.temp-num {
+  font-family: var(--mono);
+  font-size: 52px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.temp-num.neutral { color: var(--text); }
+.temp-num.warm { color: var(--red); text-shadow: 0 0 20px var(--red-glow); }
+.temp-num.cold { color: #5bc8ff; text-shadow: 0 0 20px rgba(91,200,255,0.3); }
+
+.temp-sub-big {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+  letter-spacing: 0.1em;
+}
+
+.temp-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.temp-step {
+  height: 72px;
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.temp-step:active {
+  border-color: var(--amber);
+  background: var(--amber-faint);
+  color: var(--amber);
+}
+
+.temp-confirm {
+  height: 64px;
+  background: var(--amber);
+  border: 1.5px solid var(--amber);
+  color: #000;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-transform: uppercase;
+  grid-column: span 3;
+}
+
+.temp-confirm:active { opacity: 0.85; }
+
+/* ── RESULT SCREEN ── */
+.result-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 18px 18px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.result-hero {
+  padding: 20px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.result-hero-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.result-mp {
+  font-family: var(--mono);
+  font-size: 72px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  text-shadow: 0 0 40px rgba(255,180,0,0.5);
+}
+
+.result-mp .mp-unit {
+  font-size: 20px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+.rec-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  padding: 5px 12px;
+  margin-top: 10px;
+  text-transform: uppercase;
+}
+
+.rec-pill.ok {
+  color: var(--green);
+  background: var(--green-glow);
+  border: 1px solid rgba(0,230,118,0.3);
+}
+
+.rec-pill.warn {
+  color: var(--red);
+  background: var(--red-glow);
+  border: 1px solid rgba(255,68,68,0.3);
+}
+
+.rec-pill::before { content: '●'; font-size: 7px; }
+
+.result-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.rcard {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+}
+
+.rcard-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.rcard-val {
+  font-family: var(--mono);
+  font-size: 28px;
+  color: #fff;
+  line-height: 1;
+}
+
+.rcard-val .u { font-size: 13px; color: var(--muted); margin-left: 3px; }
+
+.rcard-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+  letter-spacing: 0.06em;
+}
+
+.result-range {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.result-range .rcard-label { margin-bottom: 8px; }
+
+.range-val {
+  font-size: 22px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+
+.result-note {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  line-height: 1.7;
+  padding: 10px 12px;
+  border-left: 2px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.restart-btn {
+  height: 60px;
+  background: transparent;
+  border: 1.5px solid var(--amber-dim);
+  color: var(--amber-dim);
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.restart-btn:active {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* Summary row at top of result */
+.summary-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--amber-dim);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+/* interp badge */
+.interp {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--amber-dim);
+  border: 1px solid var(--amber-dim);
+  padding: 1px 6px;
+  letter-spacing: 0.1em;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+
+/* temp correction note on result */
+.temp-correction-note {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 6px;
+  letter-spacing: 0.06em;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ STEP 1: POWER -->
+<div class="screen active" id="s1">
+  <div class="topbar">
+    <div class="topbar-left">DA40 · <span>IO-360</span></div>
+    <div class="topbar-title">Power Settings</div>
+    <div style="width:48px"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div>
+  <div class="step-body">
+    <div class="step-q">
+      <div class="step-num">STEP 1 OF 5</div>
+      <div class="step-question">Select <em>power</em> setting</div>
+    </div>
+    <div class="options">
+      <div class="opt" onclick="pick('power',45,this)">
+        <div><div class="opt-main">45%</div><div class="opt-sub">LOW CRUISE</div></div>
+        <div class="opt-right">5.8–6.6<br>gal/h</div>
+      </div>
+      <div class="opt" onclick="pick('power',55,this)">
+        <div><div class="opt-main">55%</div><div class="opt-sub">ECONOMY CRUISE</div></div>
+        <div class="opt-right">7.0–8.7<br>gal/h</div>
+      </div>
+      <div class="opt" onclick="pick('power',65,this)">
+        <div><div class="opt-main">65%</div><div class="opt-sub">NORMAL CRUISE</div></div>
+        <div class="opt-right">7.9–9.8<br>gal/h</div>
+      </div>
+      <div class="opt" onclick="pick('power',75,this)">
+        <div><div class="opt-main">75%</div><div class="opt-sub">FAST CRUISE</div></div>
+        <div class="opt-right">9.2–11.0<br>gal/h</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ STEP 2: RPM -->
+<div class="screen" id="s2">
+  <div class="topbar">
+    <div class="back-btn" onclick="goBack(2)">← Back</div>
+    <div class="topbar-title">RPM</div>
+    <div style="width:48px"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
+  <div class="step-body">
+    <div class="step-q">
+      <div class="step-num">STEP 2 OF 5</div>
+      <div class="step-question">Select <em>RPM</em></div>
+    </div>
+    <div class="options" id="rpmOptions"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ STEP 3: MIXTURE -->
+<div class="screen" id="s3">
+  <div class="topbar">
+    <div class="back-btn" onclick="goBack(3)">← Back</div>
+    <div class="topbar-title">Mixture</div>
+    <div style="width:48px"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div>
+  <div class="step-body">
+    <div class="step-q">
+      <div class="step-num">STEP 3 OF 5</div>
+      <div class="step-question">Select <em>mixture</em></div>
+    </div>
+    <div class="options">
+      <div class="opt" style="height:88px" onclick="pick('mixture','economy',this)">
+        <div>
+          <div class="opt-main" style="font-size:24px">Best Economy</div>
+          <div class="opt-sub" style="margin-top:6px;">LOP · LEAN OF PEAK EGT</div>
+        </div>
+      </div>
+      <div class="opt" style="height:88px" onclick="pick('mixture','power',this)">
+        <div>
+          <div class="opt-main" style="font-size:24px">Best Power</div>
+          <div class="opt-sub" style="margin-top:6px;">ROP · RICH OF PEAK EGT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ STEP 4: ALTITUDE -->
+<div class="screen" id="s4">
+  <div class="topbar">
+    <div class="back-btn" onclick="goBack(4)">← Back</div>
+    <div class="topbar-title">Altitude</div>
+    <div style="width:48px"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+  <div class="step-body">
+    <div class="step-q" style="padding-bottom:12px;">
+      <div class="step-num">STEP 4 OF 5</div>
+      <div class="step-question">Enter <em>altitude</em></div>
+    </div>
+    <div class="alt-stepper">
+      <div class="alt-display-big">
+        <div class="alt-num" id="altNum">5,000</div>
+        <div class="alt-unit">FEET MSL</div>
+        <div class="alt-isa" id="altISA">ISA: +5°C / 41°F</div>
+      </div>
+      <div class="alt-buttons">
+        <div class="alt-btn-group">
+          <div class="alt-btn" onclick="adjAlt(1000)">+1,000</div>
+          <div class="alt-btn" onclick="adjAlt(500)">+500</div>
+        </div>
+        <div class="alt-btn-group">
+          <div class="alt-btn" onclick="adjAlt(-1000)">−1,000</div>
+          <div class="alt-btn" onclick="adjAlt(-500)">−500</div>
+        </div>
+        <div class="alt-btn confirm" onclick="confirmAlt()">SET ALTITUDE →</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ STEP 5: TEMP -->
+<div class="screen" id="s5">
+  <div class="topbar">
+    <div class="back-btn" onclick="goBack(5)">← Back</div>
+    <div class="topbar-title">Temperature</div>
+    <div style="width:48px"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" style="width:95%"></div></div>
+  <div class="step-body">
+    <div class="step-q" style="padding-bottom:12px;">
+      <div class="step-num">STEP 5 OF 5</div>
+      <div class="step-question">ISA <em>deviation</em></div>
+    </div>
+    <div class="temp-stepper-big">
+      <div class="temp-display-big">
+        <div class="temp-num neutral" id="tempNum">STD</div>
+        <div class="temp-sub-big" id="tempSubBig">ISA · NO CORRECTION</div>
+      </div>
+      <div class="temp-btns">
+        <div class="temp-step" onclick="adjTemp(-1)">−</div>
+        <div class="temp-step" style="font-size:16px;letter-spacing:0.1em;" onclick="resetTemp()">STD</div>
+        <div class="temp-step" onclick="adjTemp(1)">+</div>
+        <div class="temp-confirm" onclick="showResult()">CALCULATE →</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ RESULT -->
+<div class="screen" id="sResult">
+  <div class="topbar">
+    <div class="back-btn" onclick="goBack('result')">← Back</div>
+    <div class="topbar-title">Result</div>
+    <div style="width:48px"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+  <div class="result-screen" id="resultContent"></div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const TABLE = {
+  45: {
+    1800: {0:22.7,1000:22.4,2000:22.1,3000:21.8,4000:21.5,5000:21.2,6000:20.9,7000:20.5,8000:20.2,9000:19.9,10000:19.6,11000:19.3},
+    2000: {0:21.3,1000:21.0,2000:20.7,3000:20.4,4000:20.2,5000:19.9,6000:19.6,7000:19.3,8000:19.0,9000:18.7,10000:18.4,11000:18.2,12000:17.9,13000:17.6,14000:null},
+    2200: {0:20.2,1000:19.9,2000:19.6,3000:19.3,4000:19.0,5000:18.7,6000:18.4,7000:18.2,8000:17.9,9000:17.6,10000:17.3,11000:17.0,12000:16.7,13000:16.4,14000:16.1,15000:15.8,16000:15.5},
+    2400: {0:19.0,1000:18.7,2000:18.4,3000:18.2,4000:17.9,5000:17.6,6000:17.4,7000:17.1,8000:16.9,9000:16.6,10000:16.3,11000:16.1,12000:15.8,13000:15.5,14000:15.3,15000:15.0,16000:14.7,17000:14.5}
+  },
+  55: {
+    2000: {0:23.9,1000:23.6,2000:23.3,3000:23.0,4000:22.7,5000:22.3,6000:22.0,7000:21.7,8000:21.3,9000:21.1,10000:null},
+    2200: {0:22.4,1000:22.2,2000:21.9,3000:21.6,4000:21.2,5000:20.9,6000:20.6,7000:20.3,8000:20.0,9000:19.7,10000:19.4,11000:19.1,12000:null},
+    2400: {0:21.2,1000:21.0,2000:20.7,3000:20.4,4000:20.1,5000:19.8,6000:19.5,7000:19.3,8000:19.0,9000:18.7,10000:18.4,11000:18.1,12000:17.8,13000:17.6,14000:null}
+  },
+  65: {
+    2000: {0:26.8,1000:26.4,2000:26.0,3000:25.7,4000:25.4,5000:null},
+    2200: {0:24.9,1000:24.5,2000:24.2,3000:23.8,4000:23.5,5000:23.1,6000:22.8,7000:22.4,8000:null},
+    2400: {0:23.4,1000:23.2,2000:22.9,3000:22.6,4000:22.3,5000:22.0,6000:21.7,7000:21.4,8000:21.0,9000:20.7,10000:null}
+  },
+  75: {
+    2200: {0:27.3,1000:26.8,2000:26.5,3000:26.1,4000:null},
+    2400: {0:25.8,1000:25.5,2000:25.2,3000:24.8,4000:24.5,5000:24.1,6000:null}
+  }
+};
+
+const FUEL_FLOW = {
+  45: { economy:{1800:5.8,2000:6.0,2200:6.3,2400:6.6}, power:{1800:null,2000:null,2200:7.3,2400:7.7} },
+  55: { economy:{2000:7.0,2200:7.2,2400:7.5}, power:{2000:null,2200:8.5,2400:8.7} },
+  65: { economy:{2000:7.9,2200:8.2,2400:8.5}, power:{2000:null,2200:9.5,2400:9.8} },
+  75: { economy:{2200:9.2,2400:9.5}, power:{2200:10.7,2400:11.0} }
+};
+
+const REC_RPM = { 45:1800, 55:2000, 65:2200, 75:2400 };
+
+const TEMP_STEPS = [-15,-7,0,7,15];
+let tempIdx = 2;
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+const S = { power: null, rpm: null, mixture: null, alt: 5000, temp: 0 };
+let currentScreen = 's1';
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function goTo(id) {
+  const cur = document.getElementById(currentScreen);
+  const next = document.getElementById(id);
+  cur.classList.add('exit');
+  setTimeout(() => cur.classList.remove('active','exit'), 250);
+  next.classList.add('active');
+  currentScreen = id;
+}
+
+function goBack(from) {
+  const map = { 2:'s1', 3:'s2', 4:'s3', 5:'s4', result:'s5' };
+  const target = map[from] || 's1';
+  const cur = document.getElementById(currentScreen);
+  const prev = document.getElementById(target);
+  cur.classList.remove('active');
+  cur.style.transform = 'translateX(40px)';
+  cur.style.opacity = '0';
+  setTimeout(() => { cur.style.transform=''; cur.style.opacity=''; }, 250);
+  prev.style.transform = 'translateX(-40px)';
+  prev.style.opacity = '0';
+  prev.classList.add('active');
+  setTimeout(() => { prev.style.transform=''; prev.style.opacity=''; }, 10);
+  currentScreen = target;
+}
+
+// ── STEP 1 & 2: POWER + RPM ───────────────────────────────────────────────
+function pick(field, val, el) {
+  S[field] = val;
+  el.classList.add('selected');
+  setTimeout(() => {
+    el.classList.remove('selected');
+    if (field === 'power') {
+      buildRPMOptions();
+      goTo('s2');
+    } else if (field === 'rpm') {
+      goTo('s3');
+    } else if (field === 'mixture') {
+      goTo('s4');
+    }
+  }, 180);
+}
+
+function buildRPMOptions() {
+  const available = Object.keys(TABLE[S.power]).map(Number);
+  const recRPM = REC_RPM[S.power];
+  const container = document.getElementById('rpmOptions');
+  container.innerHTML = available.map(rpm => {
+    const isRec = rpm === recRPM;
+    return `<div class="opt${isRec ? ' selected' : ''}" onclick="pick('rpm',${rpm},this)" style="${isRec ? 'border-color:var(--amber);background:var(--amber-faint);' : ''}">
+      <div>
+        <div class="opt-main">${rpm}</div>
+        <div class="opt-sub">RPM${isRec ? ' · AFM RECOMMENDED' : ''}</div>
+      </div>
+      ${isRec ? '<div class="opt-right" style="color:var(--amber);">★ REC</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── STEP 4: ALTITUDE ──────────────────────────────────────────────────────
+function adjAlt(delta) {
+  S.alt = Math.max(0, Math.min(17000, S.alt + delta));
+  document.getElementById('altNum').textContent = S.alt.toLocaleString();
+  const isa = Math.round(15 - (S.alt / 1000) * 1.98);
+  const isaF = Math.round(isa * 9/5 + 32);
+  document.getElementById('altISA').textContent = `ISA: ${isa}°C / ${isaF}°F`;
+}
+
+function confirmAlt() { goTo('s5'); }
+
+// ── STEP 5: TEMP ──────────────────────────────────────────────────────────
+function adjTemp(dir) {
+  tempIdx = Math.max(0, Math.min(TEMP_STEPS.length - 1, tempIdx + dir));
+  S.temp = TEMP_STEPS[tempIdx];
+  updateTempUI();
+}
+
+function resetTemp() { tempIdx = 2; S.temp = 0; updateTempUI(); }
+
+function updateTempUI() {
+  const t = S.temp;
+  const el = document.getElementById('tempNum');
+  const sub = document.getElementById('tempSubBig');
+  if (t === 0) {
+    el.textContent = 'STD'; el.className = 'temp-num neutral';
+    sub.textContent = 'ISA · NO CORRECTION';
+  } else if (t > 0) {
+    el.textContent = `+${t}°C`; el.className = 'temp-num warm';
+    const pct = Math.round((t/15)*3);
+    sub.textContent = `ISA+${Math.round(t*1.8)}°F · −${pct}% POWER`;
+  } else {
+    el.textContent = `${t}°C`; el.className = 'temp-num cold';
+    const pct = Math.round((Math.abs(t)/15)*3);
+    sub.textContent = `ISA−${Math.round(Math.abs(t)*1.8)}°F · +${pct}% POWER`;
+  }
+}
+
+// ── CALC & RESULT ─────────────────────────────────────────────────────────
+function getMP(power, rpm, alt) {
+  const d = TABLE[power]?.[rpm]; if (!d) return null;
+  const alts = Object.keys(d).map(Number).sort((a,b)=>a-b);
+  if (d[alt] !== undefined) return d[alt];
+  let lo=null, hi=null;
+  for (let i=0;i<alts.length-1;i++) {
+    if (alts[i]<=alt && alt<=alts[i+1]) { lo=alts[i]; hi=alts[i+1]; }
+  }
+  if (lo===null) return null;
+  if (d[lo]===null||d[hi]===null) return null;
+  return d[lo] + ((alt-lo)/(hi-lo))*(d[hi]-d[lo]);
+}
+
+function showResult() {
+  const { power, rpm, mixture, alt, temp } = S;
+  let mp = getMP(power, rpm, alt);
+  const ff = FUEL_FLOW[power]?.[mixture]?.[rpm] ?? null;
+  const isInterp = mp !== null && TABLE[power]?.[rpm]?.[alt] === undefined;
+  const isRec = REC_RPM[power] === rpm;
+  const recRpm = REC_RPM[power];
+
+  let mpC = mp;
+  let tempNote = '';
+  if (mp !== null && temp !== 0) {
+    mpC = mp * (1 + (-temp/15)*0.03);
+    const sign = temp>0?'−':'+';
+    const pct = Math.round((Math.abs(temp)/15)*3);
+    tempNote = `${sign}${pct}% CORRECTION APPLIED (ISA${temp>0?'+':''}${temp}°C)`;
+  }
+
+  const tas = Math.round((({45:104,55:113,65:120,75:128}[power]||120)) + (alt/1000)*2);
+  const rangeHtml = ff ? (() => {
+    const end = 42/ff;
+    const nm = Math.round(tas*end);
+    return `<div class="result-range">
+      <div class="rcard-label">RANGE ESTIMATE</div>
+      <div class="range-val">${nm} nm &nbsp;·&nbsp; ${Math.round(end*10)/10}h</div>
+      <div class="rcard-sub" style="margin-top:5px;">@ ${tas} kt TAS (EST) · 42 USG USABLE</div>
+    </div>`;
+  })() : '';
+
+  const chipAlt = alt === 0 ? 'MSL' : `${alt.toLocaleString()} FT`;
+  const chipISA = `ISA ${Math.round(15-(alt/1000)*1.98)}°C`;
+  const chipTemp = temp===0 ? 'STD TEMP' : `ISA${temp>0?'+':''}${temp}°C`;
+
+  const el = document.getElementById('resultContent');
+  el.innerHTML = mp === null ? `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:40px 0;">
+      <div style="font-size:40px;color:var(--muted);">◯</div>
+      <div style="font-size:18px;font-weight:600;color:var(--text);">NO DATA</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);">THIS COMBINATION EXCEEDS<br>TABLE LIMITS</div>
+    </div>
+    <div class="restart-btn" onclick="restart()">← NEW CALCULATION</div>
+  ` : `
+    <div class="summary-chips">
+      <div class="chip">${power}% BHP</div>
+      <div class="chip">${rpm} RPM</div>
+      <div class="chip">${mixture==='economy'?'LOP':'ROP'}</div>
+      <div class="chip">${chipAlt}</div>
+      <div class="chip">${chipTemp}</div>
+    </div>
+
+    <div class="result-hero">
+      <div class="result-hero-label">MANIFOLD PRESSURE ${isInterp?'<span class="interp">INTERPOLATED</span>':''}</div>
+      <div class="result-mp">${mpC.toFixed(1)}<span class="mp-unit">inHg</span></div>
+      <div class="${isRec?'rec-pill ok':'rec-pill warn'}">${isRec ? 'RECOMMENDED SETTING' : `NOT RECOMMENDED · AFM: ${recRpm} RPM`}</div>
+      ${tempNote ? `<div class="temp-correction-note">⟳ ${tempNote}</div>` : ''}
+    </div>
+
+    <div class="result-cards">
+      <div class="rcard">
+        <div class="rcard-label">FUEL FLOW</div>
+        ${ff!==null ? `<div class="rcard-val">${ff.toFixed(1)}<span class="u">gal/h</span></div>` : '<div class="rcard-val" style="color:var(--muted)">N/A</div>'}
+        <div class="rcard-sub">${mixture==='economy'?'BEST ECON (LOP)':'BEST PWR (ROP)'}</div>
+      </div>
+      <div class="rcard">
+        <div class="rcard-label">ISA TEMP</div>
+        <div class="rcard-val">${Math.round(15-(alt/1000)*1.98)}<span class="u">°C</span></div>
+        <div class="rcard-sub">${chipAlt}</div>
+      </div>
+    </div>
+
+    ${rangeHtml}
+
+    <div class="result-note">
+      AFM TABLE 5-6/5-7 · DA40 IO-360<br>
+      VERIFY AGAINST POH BEFORE FLIGHT<br>
+      ±10% ACCURACY ON ESTIMATES
+    </div>
+
+    <div class="restart-btn" onclick="restart()">← NEW CALCULATION</div>
+  `;
+
+  goTo('sResult');
+}
+
+function restart() {
+  S.power=null; S.rpm=null; S.mixture=null; S.alt=5000; S.temp=0;
+  tempIdx=2; updateTempUI();
+  document.getElementById('altNum').textContent='5,000';
+  document.getElementById('altISA').textContent='ISA: +5°C / 41°F';
+  const cur = document.getElementById(currentScreen);
+  cur.classList.remove('active');
+  cur.style.transform='translateX(40px)'; cur.style.opacity='0';
+  setTimeout(()=>{cur.style.transform='';cur.style.opacity='';},250);
+  const s1 = document.getElementById('s1');
+  s1.classList.add('active');
+  currentScreen='s1';
+}
+</script>
+</body>
+</html>
